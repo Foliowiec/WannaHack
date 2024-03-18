@@ -1,5 +1,7 @@
 # WannaHack?
 ```py
-print("This is the ultimate RAT Tool")
-[!] USE AT YOUR OWN RISK EDUCATIONAL ONLY [!]
+try:
+  print("This is the ultimate RAT Tool")
+except Error:
+print("[!] USE AT YOUR OWN RISK EDUCATIONAL PURPOSES ONLY [!]")
 ```
